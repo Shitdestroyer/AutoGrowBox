@@ -13,8 +13,8 @@ modi_data = {
         'maxT': 27,
         'minH': 40,
         'maxH': 70,
-	'lightON' : 6,
-	'lightOFF' : 24
+	'lightON' : 5,
+	'lightOFF' : 23
     },
     'Blüte': {
         'minT': 24,

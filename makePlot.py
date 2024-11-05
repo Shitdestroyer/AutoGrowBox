@@ -4,6 +4,8 @@ import numpy as np
 from datetime import datetime
 from io import BytesIO
 from GrowStates import modi_data
+from pathlib import Path
+AGB = Path.home() / 'AutoGrowBox'
 
 def make_plot(modus):
 
@@ -13,7 +15,7 @@ def make_plot(modus):
 	hum_values = []
 
 	# Datei öffnen und Daten lesen
-	with open('session_data.csv', 'r') as file:
+	with open(AGB / 'data/session_data.csv', 'r') as file:
 		# CSV-Datei lesen
 		csv_reader = csv.DictReader(file)
 
@@ -80,10 +82,10 @@ def make_plot(modus):
 		plt.ylabel('Temperatur[°C]     relative Feuchtigkeit[%]')
 		plt.title('Sensorwerte' + ' [' + modus + ']')
 		plt.grid(True)
-		plt.savefig('static/plots/TempPlot.png', format='png')
+		plt.savefig(AGB / 'static/plots/TempPlot.png', format='png')
 		plt.close()
 
-	return 'static/plots/TempPlot.png'
+	return AGB / 'static/plots/TempPlot.png'
 
 
 

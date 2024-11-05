@@ -18,9 +18,11 @@ import threading
 import numpy as np
 import datetime
 from makePlot import make_plot
-from manage import manageSessionData, header_csv
+from manageData import header_csv, manageSessionData
 import os
 import sys
+from pathlib import Path
+AGB = Path.home() / 'AutoGrowBox'
 try:
     import RPi.GPIO as GPIO
 except RuntimeError:
@@ -40,7 +42,7 @@ GPIO.setwarnings(False)
 # Definiere den GPIO-Pin
 pins = {
 	26 : {'name' : 'GPIO 26', 'state' : GPIO.HIGH, 'use' : 'Licht'},		#Licht
-	19 : {'name' : 'GPIO 19', 'state' : GPIO.HIGH, 'use' : 'Luefter'},	#Lüfter
+	19 : {'name' : 'GPIO 19', 'state' : GPIO.HIGH, 'use' : 'Luefter'},		#Lüfter
 	13 : {'name' : 'GPIO 13', 'state' : GPIO.HIGH, 'use' : 'Ventilator'},	#Ventiltor
 	6 : {'name' : 'GPIO 6', 'state' : GPIO.HIGH, 'use' : 'none'}
 	}
@@ -51,11 +53,12 @@ for pin in pins:
 	GPIO.output(pin, GPIO.HIGH)
 
 # read und write-Funktionen, um die current_mode zu speichern
-def write_mode_to_file(m):
-	with open('currently_selected_mode.txt', 'w') as file:
-		file.write(m)
+def write_mode_to_file(m):													#Funktion zum hinterlegen der Phase (Modus) in einem Dokument
+	if m == "Keimung" or "Wachstum" or "Blüte" or "Trocknung":		#verhindert, dass Scheiße (Faveicon.ico) in Datei gespeichert wird
+		with open(AGB / 'currently_selected_mode.txt', 'w') as file:		#schreiben
+			file.write(m)
 def read_mode_from_file():
-	with open('currently_selected_mode.txt', 'r') as file:
+	with open(AGB / 'currently_selected_mode.txt', 'r') as file:
 		m = file.read().strip()
 	return m
 
@@ -63,15 +66,8 @@ def read_mode_from_file():
 current_mode = read_mode_from_file()
 print(f'current_mode : {current_mode}')
 
-# ein paar globale Variablen werden gesetzt, weil sonst Fehler :(
-intervallstart = [100, 0, 0]
-intervallbetrieb = 0
-
 # Kontrolliert die GPIOs basierend auf den Vorgaben in GrowStates.py und den definierten Konstanten (GROßBUCHSTABEN)
-def SDcontroller(hour, minute, second, hum, tem):
-	global current_mode
-	global intervallstart
-	global intervallbetrieb
+def SDcontroller(hour, minute, second, hum, tem, current_mode=current_mode):
 
 	### Lichtkontrolle
 	if modi_data[current_mode]['lightON'] == 'OFF':
@@ -112,15 +108,14 @@ def SDcontroller(hour, minute, second, hum, tem):
 
 
 # Funktion zum kontinuierlichen Lesen von Daten aus der seriellen Schnittstelle
-def read_serial():
-	global current_mode
-	last_minute = ''
+def read_serial(current_mode=current_mode):
+	last_minute = ''	#muss so
 
 	# Öffne eine Datei im Schreibmodus, um die empfangenen Daten zu speichern
-	with open('received_data.csv', 'a') as log, open('session_data.csv', 'w') as sessionlog:
+	with open(AGB / 'data/received_data.csv', 'a') as log, open(AGB / 'data/session_data.csv', 'w') as sessionlog:
 		while True:
 
-			current_mode = read_mode_from_file()
+			#current_mode = read_mode_from_file()
 
 			sleep(1)
 
@@ -131,11 +126,12 @@ def read_serial():
 					if ([data.split()[0], data.split()[3]]) == ['START', 'STOP']:
 						data_to_write = f'{strftime("%Y-%m-%d %H:%M:%S")}, {list(data.split()[1:3])}'
 
-						now_minute = data_to_write[:16]
-						if now_minute != last_minute:
-							log.write(data_to_write + '\n')
+						now_minute = data_to_write[:16]			#die derzeitige Minute wird aus dem empfangenen String gefischt
+						if now_minute != last_minute:			#nur, wenn die Minute sich ändert, soll ein neuer Eintrag in received_data gemacht werden, was typischerweise ein Mal pro Minute passiert
+							log.write(data_to_write + '\n')		#verhindert zu viele Einträge
 							log.flush()
 							last_minute = now_minute
+							manageSessionData()					#räum auch session_data auf
 
 						sessionlog.write(data_to_write + '\n')
 						sessionlog.flush()
@@ -183,7 +179,7 @@ y = np.sin(x)
 
 PLOT_FOLDER = os.path.join('static', 'plots')
 
-app= Flask(__name__, static_url_path='/static')
+app= Flask(__name__, static_url_path= '/static')
 app.config['PLOT_FOLDER'] = PLOT_FOLDER
 
 @app.route('/plot')
@@ -208,7 +204,6 @@ def index():
 		'pins' : pins,
 		'mode' : current_mode
 	}
-
 	return render_template('webpage.html', **templateData) #, user_image = full_filename)
 
 
@@ -238,17 +233,13 @@ def relay(changePin, action):
 		'pins' : pins,
 		'mode' : current_mode
 	}
-
 	return render_template('webpage.html', **templateData)
 
 
 @app.route("/<changeMode>")
 def modus(changeMode, current_mode=current_mode):
-	#global current_mode
-	if changeMode == "Keimung" or "Wachstum" or "Blüte" or "Trocknung":
-		current_mode = changeMode
-		write_mode_to_file(changeMode)
-
+	current_mode = changeMode
+	write_mode_to_file(changeMode)
 	for pin in pins:
 		pins[pin]['state'] = GPIO.input(pin)
 
@@ -256,7 +247,6 @@ def modus(changeMode, current_mode=current_mode):
 		'pins' : pins,
 		'mode' : changeMode
 	}
-
 	return render_template('webpage.html', **templateData)
 
 
@@ -264,7 +254,6 @@ def modus(changeMode, current_mode=current_mode):
 if __name__=="__main__":
 	print("Start")
 	app.run(debug=True, use_reloader=False, host='0.0.0.0', port=1225)
-
 	try:
 		pass
 
