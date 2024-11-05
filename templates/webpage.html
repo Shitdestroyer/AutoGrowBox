@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <title>gemüsegarten</title>
+   <!-- Latest compiled and minified CSS -->
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+   <!-- Optional theme -->
+   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+   <!-- Latest compiled and minified JavaScript -->
+   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+</head>
+
+<body>
+
+   <h1>Kiffgrasanpflanzkiste  [{{ mode }}]</h1>
+
+   <!-- Buttons Steckdosen und Modus -->
+   <div class="row">
+      <!-- Steckdosen -->
+      <div class="col-md-6">
+         <div class="row">
+            <div class="col-md-12">
+               
+			<!-- Steckdose 1 -->
+            {% if pins[26].state == false %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <h3><span class="label label-success">Steckdose 1 (Licht)</span></h3>
+                  </div>
+               </div>
+            {% else %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <h3><span class="label label-danger">Steckdose 1 (Licht)</span></h3>
+                  </div>
+               </div>
+            {% endif %}
+
+			<!-- Steckdose 2 -->
+            {% if pins[19].state == false %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <h3><span class="label label-success">Steckdose 2 (Abluft)</span></h3>
+                  </div>
+               </div>
+            {% else %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <h3><span class="label label-danger">Steckdose 2 (Abluft)</span></h3>
+                  </div>
+               </div>
+            {% endif %}
+
+			<!-- Steckdose 3 -->
+	     {% if pins[13].state == false %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <h3><span class="label label-success">Steckdose 3 (Ventilator)</span></h3>
+                  </div>
+               </div>
+            {% else %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <h3><span class="label label-danger">Steckdose 3 (Ventilator)</span></h3>
+                  </div>
+               </div>
+            {% endif %}
+
+			<!-- Steckdose 4 -->
+	    {% if pins[6].state == false %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <h3><span class="label label-success">Steckdose 4 (nix)</span></h3>
+                  </div>
+               </div>
+            {% else %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <h3><span class="label label-danger">Steckdose 4 (nix)</span></h3>
+                  </div>
+               </div>
+            {% endif %}
+
+            </div>
+         </div>
+      </div>
+
+
+      <!-- Modus -->
+      <div class="col-md-6">
+         <div class="row">
+            <div class="col-md-12">
+
+            {% if mode == 'Keimung' %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <a href="/Keimung" class="btn btn-block btn-lg btn-primary" role="button">Keimungsphase</a>
+                  </div>
+               </div>
+            {% else %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <a href="/Keimung" class="btn btn-block btn-lg btn-default" role="button">Keimungsphase</a>
+                  </div>
+               </div>
+            {% endif %}
+
+
+            {% if mode == 'Wachstum' %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <a href="/Wachstum" class="btn btn-block btn-lg btn-primary" role="button">Wachstumsphase</a>
+                  </div>
+               </div>
+            {% else %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <a href="/Wachstum" class="btn btn-block btn-lg btn-default" role="button">Wachstumsphase</a>
+                  </div>
+               </div>
+            {% endif %}
+
+	    {% if mode == 'Blüte' %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <a href="/Blüte" class="btn btn-block btn-lg btn-primary" role="button">Blütephase</a>
+                  </div>
+               </div>
+            {% else %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <a href="/Blüte" class="btn btn-block btn-lg btn-default" role="button">Blütephase</a>
+                  </div>
+               </div>
+            {% endif %}
+
+	    {% if mode == 'Trocknung' %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <a href="/Trocknung" class="btn btn-block btn-lg btn-primary" role="button">Trocknung</a>
+                  </div>
+               </div>
+            {% else %}
+               <div class="row">
+                  <div class="col-md-12">
+                     <a href="/Trocknung" class="btn btn-block btn-lg btn-default" role="button">Trocknung</a>
+                  </div>
+               </div>
+            {% endif %}
+
+
+
+            </div>
+         </div>
+      </div>
+   </div>
+
+   <!-- Temperatur-Anzeige -->
+   <div id="plot-container">
+      <img id="plot" src="/static/plots/TempPlot.png" alt="Plot Temperatursensor 1">
+   </div>
+
+   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+   <script>
+      // Funktion zum Aktualisieren des Plots alle 5 Sekunden
+      function updatePlot() {
+         var timestamp = new Date().getTime();
+         $('#plot').attr('src', '/plot?' + timestamp);
+      }
+      // Starte die Aktualisierung des Plots
+      setInterval(updatePlot, 15000);
+   </script>
+
+</body>
+</html>
