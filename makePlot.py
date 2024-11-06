@@ -15,13 +15,13 @@ def make_plot(modus):
 	hum_values = []
 
 	# Datei öffnen und Daten lesen
-	with open(AGB / 'data/session_data.csv', 'r') as file:
+	with open(AGB / 'data/session_data.csv', 'r') as sfile:
 		# CSV-Datei lesen
-		csv_reader = csv.DictReader(file)
+		csv_reader = csv.DictReader(sfile)
 
 		# Überprüfen, ob die CSV-Datei Daten enthält
 		if not csv_reader.fieldnames:
-			print("Die CSV-Datei enthält keine Daten.")
+			print("no data in session_data.")
 		else:
 			# Spaltenüberschriften ausgeben
 			#print("Spaltenüberschriften:", csv_reader.fieldnames)
@@ -40,11 +40,11 @@ def make_plot(modus):
 					print('Es sind (noch?) keine Werte vorhanden min. 2-3 nötig')
 
 	if time_values:
-		# Bereinige die temp1-Werte und wandele sie in Fließkommazahlen um
-		temp_values = [float(value.strip(" ['")) for value in temp_values]
-		hum_values = [float(e.replace("'", "").replace("[", "").replace("]", "")) for e in hum_values]
+		# wandel in Fließkommazahlen um
+		temp_values = [float(value) for value in temp_values]
+		hum_values = [float(value) for value in hum_values]
 
-		#Werte auf die letzten 1200 beschränken (5s * 1200 = 60min)
+		#auf die letzten 1200 Werte beschränken (5s * 1200 = 60min)
 		plotlaenge = -720
 		temp_values = temp_values[plotlaenge:]
 		time_values = time_values[plotlaenge:]

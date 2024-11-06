@@ -18,7 +18,7 @@ import threading
 import numpy as np
 import datetime
 from makePlot import make_plot
-from manageData import header_csv, manageSessionData
+from manageData import header_csv, manageData
 import os
 import sys
 from pathlib import Path
@@ -28,8 +28,12 @@ try:
 except RuntimeError:
     print("Error importing RPi.GPIO!  This is probably because you need superuser privileges.  You can achieve this by using 'sudo' to run your script")
 import csv
+import ast
 from GrowStates import modi_data
 import requests
+
+with open(AGB / 'data/session_data.csv', 'w', newline='') as sessionlog:	#empty session_data
+	pass
 
 plt.ion()
 x = []
@@ -50,7 +54,7 @@ pins = {
 # Konfiguriere den Pin als Ausgang
 for pin in pins:
 	GPIO.setup(pin, GPIO.OUT)
-	GPIO.output(pin, GPIO.HIGH)
+	GPIO.output(pin, GPIO.LOW)
 
 # read und write-Funktionen, um die current_mode zu speichern
 def write_mode_to_file(m):													#Funktion zum hinterlegen der Phase (Modus) in einem Dokument
@@ -106,52 +110,59 @@ def SDcontroller(hour, minute, second, hum, tem, current_mode=current_mode):
 		print( '   ' + pins[pin]['name'] + ' - ' + pins[pin]['use'] + ' : ' + str(pins[pin]['state']) )
 	print('-------------------')
 
+def write_data(data):
+	# Öffne eine Datei im Schreibmodus, um die empfangenen Daten zu speichern
+	with open(AGB / 'data/received_data.csv', 'a', newline='') as log, open(AGB / 'data/session_data.csv', 'a', newline='') as sessionlog:
+		ses_writer = csv.writer(sessionlog)
+		rec_writer = csv.writer(log)
+		for element in data:
+			timestamp, values = element.split(', ', 1)
+			values = ast.literal_eval(values)
+			temp = values[0]
+			humi = values[1]
+			ses_writer.writerow([timestamp, temp, humi])
+			rec_writer.writerow([timestamp, temp, humi])
 
 # Funktion zum kontinuierlichen Lesen von Daten aus der seriellen Schnittstelle
 def read_serial(current_mode=current_mode):
 	last_minute = ''	#muss so
 
-	# Öffne eine Datei im Schreibmodus, um die empfangenen Daten zu speichern
-	with open(AGB / 'data/received_data.csv', 'a') as log, open(AGB / 'data/session_data.csv', 'w') as sessionlog:
-		while True:
+	save_data = []
 
-			#current_mode = read_mode_from_file()
+	while True:
+		current_mode = read_mode_from_file()
 
-			sleep(1)
+		sleep(1)
 
-			if ser.in_waiting > 0:
-				data = ser.readline().decode().strip()
-				print(">>>Received:", str(data))
-				if len(data.split()) == 4:
-					if ([data.split()[0], data.split()[3]]) == ['START', 'STOP']:
-						data_to_write = f'{strftime("%Y-%m-%d %H:%M:%S")}, {list(data.split()[1:3])}'
+		if ser.in_waiting > 0:
+			data = ser.readline().decode().strip()
+			print(">>>Received:", str(data))
+			if len(data.split()) == 4:
+				if ([data.split()[0], data.split()[3]]) == ['START', 'STOP']:
+					data_to_write = f'{strftime("%Y-%m-%d %H:%M:%S")}, {data.split()[1:3]}'
+					
+					save_data.append(data_to_write)					#temporarily save in list
 
-						now_minute = data_to_write[:16]			#die derzeitige Minute wird aus dem empfangenen String gefischt
-						if now_minute != last_minute:			#nur, wenn die Minute sich ändert, soll ein neuer Eintrag in received_data gemacht werden, was typischerweise ein Mal pro Minute passiert
-							log.write(data_to_write + '\n')		#verhindert zu viele Einträge
-							log.flush()
-							last_minute = now_minute
-							manageSessionData()					#räum auch session_data auf
+					now_minute = data_to_write[:16]					#get the current minute
+					if now_minute != last_minute:					#once a minute
+						write_data(save_data)						#write collectei data to file
+						save_data = []								#empty list
+						last_minute = now_minute
 
-						sessionlog.write(data_to_write + '\n')
-						sessionlog.flush()
-						# Hier kannst du weitere Verarbeitung der empfangenen Daten durchführen
-				elif str(data) == 'Sensormodul startklar':
-					#log.write( f'{data.split()[1:4]}\n' )
 					# Hier kannst du weitere Verarbeitung der empfangenen Daten durchführen
-					#log.flush()
-					pass
-				try:
-					rec_hou = int(data_to_write[11:13])	# erhaltene Stunde
-					rec_min = int(data_to_write[14:16])	# "	    Minute
-					rec_sec = int(data_to_write[17:19])	# usw
-					rec_tem = int(data_to_write[23:25]) + round(int(data_to_write[26:28])/100)
-					rec_hum = int(data_to_write[32:34])
+			elif str(data) == 'Sensormodul startklar':
+				pass
 
-					SDcontroller(rec_hou, rec_min, rec_sec, rec_hum, rec_tem)
-				except UnboundLocalError as e:
-					print('noch keine Daten erhalten (data_to_write noch nicht definiert)')
-					pass
+			try:
+				rec_hou = int(data_to_write[11:13])	# erhaltene Stunde
+				rec_min = int(data_to_write[14:16])	# "	    Minute
+				rec_sec = int(data_to_write[17:19])	# usw
+				rec_tem = int(data_to_write[23:25]) + round(int(data_to_write[26:28])/100)
+				rec_hum = int(data_to_write[32:34])
+
+				SDcontroller(rec_hou, rec_min, rec_sec, rec_hum, rec_tem)
+			except UnboundLocalError as e:
+				print('noch keine Daten erhalten (data_to_write noch nicht definiert)')
 
 # Öffne die serielle Schnittstelle, 9600 ist die Baudrate
 try:
@@ -192,7 +203,6 @@ def plot():
 		plot_path = make_plot(current_mode)
 		return send_file(plot_path, mimetype='image/png')
 
-
 @app.route('/')
 @app.route('/index')
 def index():
@@ -205,7 +215,6 @@ def index():
 		'mode' : current_mode
 	}
 	return render_template('webpage.html', **templateData) #, user_image = full_filename)
-
 
 # The function below is executed when someone requests a URL with the pin number and action in it:
 @app.route("/<changePin>/<action>")
@@ -235,7 +244,6 @@ def relay(changePin, action):
 	}
 	return render_template('webpage.html', **templateData)
 
-
 @app.route("/<changeMode>")
 def modus(changeMode, current_mode=current_mode):
 	current_mode = changeMode
@@ -248,8 +256,6 @@ def modus(changeMode, current_mode=current_mode):
 		'mode' : changeMode
 	}
 	return render_template('webpage.html', **templateData)
-
-
 
 if __name__=="__main__":
 	print("Start")
@@ -264,5 +270,5 @@ if __name__=="__main__":
 
 	finally:
 		# Aufräumen und GPIO zurücksetzen
-		GPIO.cleanup()
+		#GPIO.cleanup()
 		ser.close()
